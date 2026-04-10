@@ -1,4 +1,5 @@
 import { getDeviceMenuFor } from './menubuilderdevice';
+import { MACRO_KEYS, MACRO_ACTIONS } from '../macrokeymanager';
 
 export function getMenuFor(application) {
   const fullMenu = getMainMenu(application)
@@ -54,6 +55,10 @@ function getMainMenu(application) {
           state: application.razerApplication.stateManager.serialize(),
         });
       },
+    },
+    {
+      label: 'Macro Keys (M1–M5)',
+      submenu: getMacroKeyMenu(application),
     },
     { type: 'separator' },
     {
@@ -187,6 +192,29 @@ function getCustomColorsCycleMenu(application) {
 
 function getDeviceMenu(application) {
   return application.razerApplication.deviceManager.activeRazerDevices.map(device => getDeviceMenuFor(application, device)).flat();
+}
+
+function getMacroKeyMenu(application) {
+  const macroManager = application.razerApplication.macroKeyManager;
+  const allActions = Object.values(MACRO_ACTIONS);
+
+  return Object.entries(MACRO_KEYS).map(([macroKey, shortcutKey]) => {
+    const currentActionId = macroManager.getKeyBinding(macroKey);
+    const currentActionLabel = (allActions.find(a => a.id === currentActionId) || MACRO_ACTIONS.DISABLED).label;
+
+    return {
+      label: `${macroKey} (${shortcutKey}): ${currentActionLabel}`,
+      submenu: allActions.map(action => ({
+        label: action.label,
+        type: 'radio',
+        checked: currentActionId === action.id,
+        click() {
+          macroManager.setKeyBinding(macroKey, action.id);
+          application.refreshTray();
+        },
+      })),
+    };
+  });
 }
 
 function getMainMenuBottom(application) {

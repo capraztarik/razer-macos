@@ -3,6 +3,7 @@ import { SettingsManager } from './settingsmanager';
 import { RazerAnimationCycleSpectrum } from './animation/animationcyclespectrum';
 import { RazerAnimationCycleCustom } from './animation/animationcyclecustom';
 import { StateManager } from './statemanager';
+import { MacroKeyManager } from './macrokeymanager';
 
 /**
  * Main application
@@ -17,6 +18,7 @@ export class RazerApplication {
     this.settingsManager = new SettingsManager();
     this.stateManager = new StateManager(this.settingsManager);
     this.deviceManager = new RazerDeviceManager(this.settingsManager, this.stateManager);
+    this.macroKeyManager = new MacroKeyManager(this.settingsManager);
     this.spectrumAnimation = null;
     this.cycleAnimation = null;
   }
@@ -30,11 +32,13 @@ export class RazerApplication {
         this.cycleAnimation = animation;
       });
       const resetAll = this.stateManager.init(this.deviceManager.activeRazerDevices, withOnStartState);
-      return Promise.all([spectrumPromise, cyclePromise, resetAll]).then(() => true);
+      const macroInit = this.macroKeyManager.init(this.deviceManager);
+      return Promise.all([spectrumPromise, cyclePromise, resetAll, macroInit]).then(() => true);
     });
   }
 
   destroy() {
+    this.macroKeyManager.destroy();
     this.deviceManager.destroy();
   }
 
